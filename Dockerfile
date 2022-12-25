@@ -21,13 +21,27 @@
 #   docker run -ti -e HOST_IP=$(ip route | grep -v docker | awk '{if(NF==11) print $9}') --entrypoint /bin/bash local/pl-ipfs
 #
 
+FROM busybox:stable
+LABEL maintainer="enp0s3 <ibezukh@redhat.com>"
+
+ENV TARFILE ipfs.tar.gz
+ENV IPFS_VER v0.17.0
+ENV IPFS_URL https://github.com/ipfs/kubo/releases/download/v0.17.0/kubo_${IPFS_VER}_darwin-amd64.tar.gz
+
+WORKDIR /tmp
+
+RUN wget -O ${TARFILE} ${IPFS_URL} && \
+    tar -xf ${TARFILE}
+
 FROM python:3.9.1-slim-buster
 LABEL maintainer="sgallagher <sgallagh@redhat.com>"
 
 WORKDIR /usr/local/src
 
+COPY --from=0 /tmp/kubo/ipfs /usr/local/bin
 COPY requirements.txt .
-RUN pip install -r requirements.txt
+RUN chmod +x /usr/local/bin/ipfs && \
+    pip install -r requirements.txt
 
 COPY . .
 RUN pip install .
